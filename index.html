@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>점심 메뉴 추천 시스템 v3.1</title>
+    <style>
+        /* [공대 감성 스타일] 모니터 배경 및 그리드 모눈종이 효과 */
+        body {
+            background-color: #0d1117;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #c9d1d9;
+            font-family: 'Consolas', 'Courier New', 'Fira Code', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 터미널 및 인지니어링 콘솔 패널 */
+        .engineering-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* 시스템 상태 헤더 */
+        .system-status {
+            font-size: 11px;
+            color: #8b949e;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            color: #58a6ff;
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #30363d;
+            letter-spacing: 1px;
+        }
+
+        /* 이미지/아이콘 슬라이드 창 영역 */
+        .image-wrapper {
+            background-color: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #menu-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        #image-caption {
+            font-size: 18px;
+            color: #e6edf3;
+            font-weight: bold;
+        }
+
+        /* 공대 스타일 실행 버튼 */
+        .btn-container {
+            margin-top: 15px;
+        }
+
+        button {
+            background-color: #21262d;
+            color: #58a6ff;
+            border: 1px solid #8b949e;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #58a6ff;
+            color: #0d1117;
+            border-color: #58a6ff;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* 결괏값 출력 터미널 로그 스타일 */
+        #result-area {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #010409;
+            border: 1px solid #21262d;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #7ee787;
+            min-height: 24px;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        /* 하단 시스템 푸터 로그 */
+        .footer-info {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #484f58;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="engineering-card">
+        <div class="system-status">[SYS_READY] :: MODULE_STABLE</div>
+        <h2>=== 오늘의 점심 메뉴 ===</h2>
+        
+        <!-- 2초마다 바뀌는 슬라이드 창 (이모지+텍스트 조합으로 안정성 확보) -->
+        <div class="image-wrapper">
+            <div id="menu-icon">🍱</div>
+            <div id="image-caption">시스템 대기 중...</div>
+        </div>
+        
+        <div class="btn-container">
+            <button id="recommend-btn" onclick="selectRandomMenu()">점심 메뉴 추천</button>
+        </div>
+
+        <div id="result-area">버튼을 눌러 추천을 시작하세요.</div>
+
+        <div class="footer-info">BUILD: SUCCESS | STABLE RUNTIME</div>
+    </div>
+
+    <script>
+        // 한식, 양식, 중식, 일식 총 40가지 확장 메뉴 데이터 (이모지 아이콘 포함)
+        const menus = [
+            // 한식
+            { name: "불고기 덮밥", icon: "🥩" },
+            { name: "김치찌개", icon: "🍲" },
+            { name: "비빔밥", icon: "🥗" },
+            { name: "떡볶이와 순대", icon: "🍛" },
+            { name: "제육볶음", icon: " thịt" },
+            { name: "물냉면", icon: "🍜" },
+            { name: "갈비탕", icon: "🍖" },
+            { name: "된장찌개", icon: "🥘" },
+            { name: "닭볶음탕", icon: "🍗" },
+            { name: "삼겹살 구이", icon: "🥓" },
+
+            // 양식
+            { name: "돈카츠 (돈가스)", icon: "🥩" },
+            { name: "까르보나라 파스타", icon: "🍝" },
+            { name: "토마토 파스타", icon: "🍝" },
+            { name: "페퍼로니 피자", icon: "🍕" },
+            { name: "수제 버거", icon: "🍔" },
+            { name: "오므라이스", icon: "🍳" },
+            { name: "스테이크", icon: "🥩" },
+            { name: "씨푸드 리조또", icon: "🦐" },
+            { name: "치킨 샐러드", icon: "🥗" },
+            { name: "포테이토 피자", icon: "🍕" },
+
+            // 중식
+            { name: "짜장면", icon: "🍜" },
+            { name: "짬뽕", icon: "🍜" },
+            { name: "탕수육", icon: "🍖" },
+            { name: "마라탕", icon: "🌶️" },
+            { name: "볶음밥", icon: "🍚" },
+            { name: "깐풍기", icon: "🍗" },
+            { name: "고추잡채와 꽃빵", icon: "🥟" },
+            { name: "마라샹궈", icon: "🔥" },
+            { name: "딤섬", icon: "🥟" },
+            { name: "멘보샤", icon: "🥪" },
+
+            // 일식
+            { name: "초밥 세트", icon: "🍣" },
+            { name: "규동 (소고기덮밥)", icon: "🍱" },
+            { name: "일본식 라멘", icon: "🍜" },
+            { name: "사케동 (연어덮밥)", icon: "🍱" },
+            { name: "가츠동", icon: "🍛" },
+            { name: "타코야키", icon: "🐙" },
+            { name: "메밀소바", icon: "🍜" },
+            { name: "우동", icon: "🍲" },
+            { name: "오코노미야키", icon: "🥞" },
+            { name: "야키소바", icon: "🍝" }
+        ];
+
+        const iconElement = document.getElementById("menu-icon");
+        const captionElement = document.getElementById("image-caption");
+        let slideInterval;
+        let isRunning = false;
+
+        // 2초마다 이미지가 랜덤하게 바뀌도록 설정
+        function startSlideshow() {
+            if (slideInterval) clearInterval(slideInterval);
+            slideInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * menus.length);
+                const currentMenu = menus[randomIndex];
+                iconElement.innerHTML = currentMenu.icon;
+                captionElement.innerHTML = currentMenu.name;
+            }, 2000); // 2초마다 변경
+        }
+
+        // 페이지 로드 시 슬라이드쇼 시작
+        window.onload = function() {
+            startSlideshow();
+        };
+
+        function selectRandomMenu() {
+            if (isRunning) return; // 중복 클릭 방지
+            isRunning = true;
+
+            const resultArea = document.getElementById("result-area");
+            const btn = document.getElementById("recommend-btn");
+            
+            btn.style.opacity = "0.5";
+            resultArea.style.color = "#d29922";
+            resultArea.innerHTML = "메뉴 선정 중...";
+
+            // 빠르게 깜빡이는 효과 (추첨 느낌)
+            let fastTimer = setInterval(() => {
+                const tempIndex = Math.floor(Math.random() * menus.length);
+                iconElement.innerHTML = menus[tempIndex].icon;
+                captionElement.innerHTML = menus[tempIndex].name;
+            }, 100);
+
+            // 1초 후 최종 결과 고정
+            setTimeout(() => {
+                clearInterval(fastTimer);
+                if (slideInterval) clearInterval(slideInterval); // 슬라이드 멈춤
+
+                const finalIndex = Math.floor(Math.random() * menus.length);
+                const selected = menus[finalIndex];
+                
+                iconElement.innerHTML = selected.icon;
+                captionElement.innerHTML = selected.name;
+
+                resultArea.style.color = "#7ee787";
+                resultArea.innerHTML = selected.name;
+
+                btn.style.opacity = "1";
+                isRunning = false;
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>
